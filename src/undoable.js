@@ -1,37 +1,37 @@
 function undoable (target) {
   const history = []
   let now = 0
-  let revoked = false
+  let trackingActive = true
 
   Object.defineProperty(target, 'undo', {
     enumerable: false,
     value () {
-      revoked = true
+      trackingActive = false
       history.push(Object.assign({}, target))
       set(target, history[--now])
-      revoked = false
+      trackingActive = true
     }
   })
 
   Object.defineProperty(target, 'redo', {
     enumerable: false,
     value () {
-      revoked = true
+      trackingActive = false
       set(target, history[++now])
-      revoked = false
+      trackingActive = true
     }
   })
 
   const proxy = new Proxy(target, {
     set () {
-      if (!revoked) {
+      if (!trackingActive) {
         now += 1
         history.push(Object.assign({}, target))
       }
       Reflect.set.apply(this, arguments)
     },
     deleteProperty () {
-      if (!revoked) {
+      if (!trackingActive) {
         now += 1
         history.push(Object.assign({}, target))
       }
